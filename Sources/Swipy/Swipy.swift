@@ -17,6 +17,7 @@ public struct Swipy<T: Identifiable, ItemView: View>: View, SwipyProtocol {
     public var onTouchDownScaleX: CGFloat = 0.95
     public var maxScaleDownX: CGFloat = 0.85
     public var maxScaleDownY: CGFloat = 0.85
+    public var percentageToSwipe: CGFloat = 0.02
     public var animation: Animation = .interactiveSpring(response: 0.1, dampingFraction: 0.5).speed(0.2)
 
     @State private var offsetY: CGFloat = .zero
@@ -27,7 +28,7 @@ public struct Swipy<T: Identifiable, ItemView: View>: View, SwipyProtocol {
     @State private var dragValue: DragGesture.Value?
 
 
-    private var isTranslationGreaterThanOneFourth: Bool { abs(trHeight) > (containerHeight / 8) }
+    private var isTranslationGreaterThanTenPercent: Bool { abs(trHeight) > (containerHeight * percentageToSwipe) }
     private var trHeight: CGFloat { dragValue?.translation.height ?? 0 }
     private var trWidth: CGFloat { dragValue?.translation.width ?? 0 }
     private var isTopIndex: Bool { draggingIndex == 0 }
@@ -60,6 +61,7 @@ public struct Swipy<T: Identifiable, ItemView: View>: View, SwipyProtocol {
         onTouchDownScaleX: CGFloat = 0.95,
         maxScaleDownX: CGFloat = 0.85,
         maxScaleDownY: CGFloat = 0.85,
+        percentageToSwipe: CGFloat = 0.02,
         animation: Animation = .interactiveSpring(response: 0.1, dampingFraction: 0.5).speed(0.2),
         @ViewBuilder _ onItemView: @escaping OnItemView,
         onSwipe: @escaping OnSwipe
@@ -73,6 +75,7 @@ public struct Swipy<T: Identifiable, ItemView: View>: View, SwipyProtocol {
         self.maxScaleDownX = maxScaleDownX
         self.maxScaleDownY = maxScaleDownY
         self.animation = animation
+        self.percentageToSwipe = percentageToSwipe
         self.onItemView = onItemView
         self.onSwipe = onSwipe
     }
@@ -102,7 +105,7 @@ public struct Swipy<T: Identifiable, ItemView: View>: View, SwipyProtocol {
             .onEnded { _ in
                 withAnimation(animation) {
                     isDragging = false
-                    if isTranslationGreaterThanOneFourth {
+                    if isTranslationGreaterThanTenPercent {
                         if isDraggingDown {
                             draggingIndex = isTopIndex ? startIndex : draggingIndex - 1
                         } else if isDraggingUp {
