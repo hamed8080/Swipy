@@ -17,19 +17,19 @@ Add in `Package.swift`:
 
 ## Usage 
 ```swift
-VSwipy(users, containerHeight: containerHeight) { user in
+VSwipy(users) { user in
     HStack {
-        Text("Test")
-            .font(.subheadline)
+        ...
     }
     .frame(minHeight: 0, maxHeight: containerHeight)
-    .background(.green.opacity(0.5))
+    .background(Color.white)
     .cornerRadius(24)
+
 } onSwipe: { item in
     selectedItem = item
 }
 .frame(minHeight: 0, maxHeight: containerHeight)
-.background(.ultraThinMaterial)
+.background(Color.black)
 .cornerRadius(24)
 ```
 <br/>
