@@ -10,9 +10,6 @@ import SwiftUI
 public struct VSwipy<T: Identifiable, ItemView: View>: View, SwipyProtocol {
     public typealias Item = T
 
-    public var containerHeight: CGFloat = 100
-    public var containerWidth: CGFloat = 346
-    public var containerCornerRadius: CGFloat = 24
     public var edgeBouncerAmount: CGFloat = 10
     public var onTouchDownScaleX: CGFloat = 0.95
     public var maxScaleDownX: CGFloat = 0.85
@@ -20,6 +17,7 @@ public struct VSwipy<T: Identifiable, ItemView: View>: View, SwipyProtocol {
     public var percentageToSwipe: CGFloat = 0.02
     public var animation: Animation = .interactiveSpring(response: 0.1, dampingFraction: 0.5).speed(0.2)
 
+    @State private var containerHeight: CGFloat = 100
     @State private var offsetY: CGFloat = .zero
     @State private var scaleY: CGFloat = 1
     @State private var scaleX: CGFloat = 1
@@ -54,9 +52,6 @@ public struct VSwipy<T: Identifiable, ItemView: View>: View, SwipyProtocol {
 
     public init(
         _ items: [Item],
-        containerHeight: CGFloat = 100,
-        containerWidth: CGFloat = 346,
-        containerCornerRadius: CGFloat = 24,
         edgeBouncerAmount: CGFloat = 10,
         onTouchDownScaleX: CGFloat = 0.95,
         maxScaleDownX: CGFloat = 0.85,
@@ -67,9 +62,6 @@ public struct VSwipy<T: Identifiable, ItemView: View>: View, SwipyProtocol {
         onSwipe: @escaping OnSwipe
     ) {
         self.items = items
-        self.containerHeight = containerHeight
-        self.containerWidth = containerWidth
-        self.containerCornerRadius = containerCornerRadius
         self.edgeBouncerAmount = edgeBouncerAmount
         self.onTouchDownScaleX = onTouchDownScaleX
         self.maxScaleDownX = maxScaleDownX
@@ -79,7 +71,6 @@ public struct VSwipy<T: Identifiable, ItemView: View>: View, SwipyProtocol {
         self.onItemView = onItemView
         self.onSwipe = onSwipe
     }
-
 
     var drag: some Gesture {
         DragGesture(minimumDistance: 10)
@@ -98,8 +89,8 @@ public struct VSwipy<T: Identifiable, ItemView: View>: View, SwipyProtocol {
                         return
                     }
                     offsetY += trHeight
-                    scaleY = abs(max(maxScaleDownY, (trHeight / 100) - 1))
-                    scaleX = abs(max(maxScaleDownX, (trWidth / 100) - 1))
+                    scaleY = abs(max(maxScaleDownY, (trHeight / 100)))
+                    scaleX = abs(max(maxScaleDownX, (trWidth / 100)))
                 }
             }
             .onEnded { _ in
@@ -134,29 +125,63 @@ public struct VSwipy<T: Identifiable, ItemView: View>: View, SwipyProtocol {
     }
 
     public var body: some View {
-        ScrollView {
-            VStack(spacing: 0) {
-                ForEach(items) { item in
-                    HStack {
+        GeometryReader { reader in
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 0) {
+                    ForEach(items) { item in
                         onItemView(item)
-                    }
-                    .frame(width: containerWidth, height: containerHeight)
-                    .cornerRadius(containerCornerRadius)
-                    .scaleEffect(x: isDragging ? scaleX : 1, y: isDragging ? scaleY : 1, anchor: .center)
-                    .offset(CGSize(width: 0, height: offsetY))
-                    .gesture(combinedGesture)
-                    .onLongPressGesture(minimumDuration: 0.002, maximumDistance: 0) {} onPressingChanged: { isPressing in
-                        withAnimation {
-                            scaleY = isPressing ? onTouchDownScaleX : 1
-                            scaleX = isPressing ? onTouchDownScaleX : 1
-                            isDragging = isPressing
-                        }
+                            .frame(height: containerHeight)
+                            .scaleEffect(x: isDragging ? scaleX : 1, y: isDragging ? scaleY : 1, anchor: .center)
+                            .offset(CGSize(width: 0, height: offsetY))
+                            .gesture(combinedGesture)
+                            .onLongPressGesture(minimumDuration: 0.002, maximumDistance: 0) {} onPressingChanged: { isPressing in
+                                withAnimation {
+                                    scaleY = isPressing ? onTouchDownScaleX : 1
+                                    scaleX = isPressing ? onTouchDownScaleX : 1
+                                    isDragging = isPressing
+                                }
+                            }
                     }
                 }
             }
+            .onAppear {
+                containerHeight = reader.size.height
+            }
         }
-        .frame(width: containerWidth, height: containerHeight, alignment: .top)
-        .cornerRadius(containerCornerRadius)
+    }
+
+    var debudDescription: String {
+        let dic: [String: Any] = [
+            "offsetY": offsetY,
+            "scaleY": scaleY,
+            "scaleX": scaleX,
+            "isDragging": isDragging,
+            "draggingIndex": draggingIndex,
+            "dragValue": dragValue.debugDescription,
+            "isTranslationGreaterThanTenPercent": isTranslationGreaterThanTenPercent,
+            "trHeight": trHeight,
+            "trWidth": trWidth,
+            "isTopIndex": isTopIndex,
+            "startIndex": startIndex,
+            "lastIndex": lastIndex,
+            "isLastIndex": isLastIndex,
+            "isGreaterThanLastIndex": isGreaterThanLastIndex,
+            "isDraggingDown": isDraggingDown,
+            "isDraggingUp": isDraggingUp,
+            "maxAllowedDraggUp": maxAllowedDraggUp,
+            "currentTranslationIsBiggerThanMinAllowed": currentTranslationIsBiggerThanMinAllowed,
+            "currentTranslationIsBiggerThanMaxAllowed": currentTranslationIsBiggerThanMaxAllowed,
+            "isOverMin": isOverMin,
+            "isOverMax": isOverMax,
+            "edgeBouncerAmount": edgeBouncerAmount,
+            "onTouchDownScaleX": onTouchDownScaleX,
+            "maxScaleDownX": maxScaleDownX,
+            "maxScaleDownY": maxScaleDownY,
+            "percentageToSwipe": percentageToSwipe,
+            "animation": animation,
+            "containerHeight": containerHeight
+        ]
+        return dic.map{"\($0): \($1)"}.joined(separator: ",")
     }
 }
 
