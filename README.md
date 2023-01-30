@@ -17,7 +17,7 @@ Add in `Package.swift`:
 
 ## Usage 
 ```swift
-Swipy(users, containerHeight: containerHeight) { user in
+VSwipy(users, containerHeight: containerHeight) { user in
     HStack {
         Text("Test")
             .font(.subheadline)
@@ -34,10 +34,6 @@ Swipy(users, containerHeight: containerHeight) { user in
 ```
 <br/>
 <br/>
-
-
-## Developer Application 
-Check out `SwipyPreview.swift` for an in-action example.
 
 
 ## Contributing to Swipy

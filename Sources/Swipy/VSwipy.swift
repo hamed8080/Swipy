@@ -1,13 +1,13 @@
 //
-//  ContentView.swift
-//  SwiftUISamples
+//  VSwipy.swift
+//  Swipy
 //
 //  Created by hamed on 1/29/23.
 //
 
 import SwiftUI
 
-public struct Swipy<T: Identifiable, ItemView: View>: View, SwipyProtocol {
+public struct VSwipy<T: Identifiable, ItemView: View>: View, SwipyProtocol {
     public typealias Item = T
 
     public var containerHeight: CGFloat = 100
