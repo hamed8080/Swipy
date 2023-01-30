@@ -7,8 +7,8 @@
 
 import SwiftUI
 
-struct Swipy<T: Identifiable, ItemView: View>: View, SwipyProtocol {
-    typealias Item = T
+public struct Swipy<T: Identifiable, ItemView: View>: View, SwipyProtocol {
+    public typealias Item = T
 
     public var containerHeight: CGFloat = 100
     public var containerWidth: CGFloat = 346
@@ -44,14 +44,14 @@ struct Swipy<T: Identifiable, ItemView: View>: View, SwipyProtocol {
     private var isOverMax: Bool { isDraggingUp && (draggingIndex >= lastIndex || currentTranslationIsBiggerThanMaxAllowed) }
 
 
-    typealias OnItemView = (Item) -> (ItemView)
-    typealias OnSwipe = (Item) -> ()
+    public typealias OnItemView = (Item) -> (ItemView)
+    public typealias OnSwipe = (Item) -> ()
     var onItemView: OnItemView
     var onSwipe: OnSwipe?
 
-    var items: [Item]
+    public var items: [Item]
 
-    init(
+    public init(
         _ items: [Item],
         containerHeight: CGFloat = 100,
         containerWidth: CGFloat = 346,
@@ -130,7 +130,7 @@ struct Swipy<T: Identifiable, ItemView: View>: View, SwipyProtocol {
         SequenceGesture(longGesture, drag)
     }
 
-    var body: some View {
+    public var body: some View {
         ScrollView {
             VStack(spacing: 0) {
                 ForEach(items) { item in

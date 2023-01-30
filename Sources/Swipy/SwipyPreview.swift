@@ -33,7 +33,7 @@ extension CGFloat {
     }
 }
 
-internal protocol SwipyProtocol {
+public protocol SwipyProtocol {
     associatedtype Item: Identifiable
     var items: [Item] { get set }
 }
