@@ -49,7 +49,6 @@ public struct VSwipy<T: Identifiable, ItemView: View>: View, SwipyProtocol {
     public typealias OnSwipe = (Item) -> ()
     var onItemView: OnItemView
     var onSwipe: OnSwipe?
-
     public var items: [Item]
 
     public init(
@@ -79,49 +78,18 @@ public struct VSwipy<T: Identifiable, ItemView: View>: View, SwipyProtocol {
     var drag: some Gesture {
         DragGesture(minimumDistance: 10)
             .onChanged { value in
-                withAnimation(animation) {
-                    dragValue = value
-                    if isOverMin {
-                        draggingIndex = startIndex
-                        offsetY = edgeBouncerAmount
-                        return
-                    }
-
-                    if isOverMax {
-                        draggingIndex = lastIndex
-                        offsetY = maxAllowedDraggUp
-                        return
-                    }
-                    offsetY += trHeight
-                    scaleY = abs(max(maxScaleDownY, (trHeight / 100)))
-                    scaleX = abs(max(maxScaleDownX, (trWidth / 100)))
-                }
+                dragValue = value
+                onDragging()
             }
             .onEnded { _ in
-                withAnimation(animation) {
-                    isDragging = false
-                    if isTranslationGreaterThanTenPercent {
-                        if isDraggingDown {
-                            draggingIndex = isTopIndex ? startIndex : draggingIndex - 1
-                        } else if isDraggingUp {
-                            draggingIndex = isLastIndex ? lastIndex : draggingIndex + 1
-                        }
-                    }
-                    offsetY = -(draggingIndex.cgFloatValue * containerHeight)
-                    selection = items[draggingIndex].id
-                    onSwipe?(items[draggingIndex])
-                }
+                onDrageFinished()
             }
     }
 
     var longGesture: some Gesture {
         LongPressGesture(minimumDuration: 0.002)
-            .onEnded { _ in
-                withAnimation {
-                    scaleY = onTouchDownScaleX
-                    scaleX = onTouchDownScaleX
-                    isDragging = true
-                }
+            .onEnded { finished in
+                onLongPressing(true)
             }
     }
 
@@ -136,15 +104,11 @@ public struct VSwipy<T: Identifiable, ItemView: View>: View, SwipyProtocol {
                     ForEach(items) { item in
                         onItemView(item)
                             .frame(height: containerHeight)
-                            .scaleEffect(x: isDragging ? scaleX : 1, y: isDragging ? scaleY : 1, anchor: .center)
+                            .scaleEffect(x: isDragging ? scaleX : 1, y: isDragging ? scaleY : 1)
                             .offset(CGSize(width: 0, height: offsetY))
                             .gesture(combinedGesture)
                             .onLongPressGesture(minimumDuration: 0.002, maximumDistance: 0) {} onPressingChanged: { isPressing in
-                                withAnimation {
-                                    scaleY = isPressing ? onTouchDownScaleX : 1
-                                    scaleX = isPressing ? onTouchDownScaleX : 1
-                                    isDragging = isPressing
-                                }
+                                onLongPressing(isPressing)
                             }
                     }
                 }
@@ -152,13 +116,109 @@ public struct VSwipy<T: Identifiable, ItemView: View>: View, SwipyProtocol {
             .onAppear {
                 containerHeight = reader.size.height
             }
-            .onReceive(Just(selection)) { mewValue in
-                withAnimation {
-                    if let selection = selection, let selectedIndex = items.firstIndex(where: {$0.id == selection }) {
-                        draggingIndex = selectedIndex
-                        offsetY = -(draggingIndex.cgFloatValue * containerHeight)
-                    }
-                }
+            .onReceive(Just(selection)) { newValue in
+                onSelection(newValue)
+            }
+        }
+    }
+
+    func onLongPressing(_ isPressing: Bool) {
+        withAnimation {
+            isDragging = isPressing
+            if isPressing {
+                onPrsssingScale()
+            } else {
+                onResetScale()
+            }
+        }
+    }
+
+    func onPrsssingScale() {
+        scaleY = onTouchDownScaleX
+        scaleX = onTouchDownScaleX
+    }
+
+    func onDraggingScale() {
+        scaleY = abs(max(maxScaleDownY, (trHeight / 100)))
+        scaleX = scaleY
+    }
+
+    func onResetScale() {
+        scaleY = 1
+        scaleX = 1
+    }
+
+    func onDragging() {
+        withAnimation(animation) {
+            if isOverMin {
+                onOverDraggingFirstIndex()
+                return
+            }
+
+            if isOverMax {
+                onOverDraggingLastIndex()
+                return
+            }
+            calculateOffsetOnDragging()
+            onDraggingScale()
+        }
+    }
+
+    func onOverDraggingFirstIndex() {
+        draggingIndex = startIndex
+        offsetY = edgeBouncerAmount
+        onResetScale()
+    }
+
+    func onOverDraggingLastIndex() {
+        draggingIndex = lastIndex
+        offsetY = maxAllowedDraggUp
+        onResetScale()
+    }
+
+    func calculateOffsetOnDragging() {
+        offsetY += trHeight
+    }
+
+    func calculateOffsetForCurrentSelection() {
+        offsetY = -(draggingIndex.cgFloatValue * containerHeight)
+    }
+
+    func calculateOnFinishedDraggingIndex() {
+        if isTranslationGreaterThanTenPercent {
+            if isDraggingDown {
+                onDragDownIndex()
+            } else if isDraggingUp {
+                onDragUpIndex()
+            }
+        }
+        onResetScale()
+    }
+
+    func onDragDownIndex() {
+        draggingIndex = isTopIndex ? startIndex : draggingIndex - 1
+    }
+
+    func onDragUpIndex() {
+        draggingIndex = isLastIndex ? lastIndex : draggingIndex + 1
+    }
+
+    func onDrageFinished() {
+        withAnimation(animation) {
+            isDragging = false
+            calculateOnFinishedDraggingIndex()
+            calculateOffsetForCurrentSelection()
+            selection = items[draggingIndex].id
+            onSwipe?(items[draggingIndex])
+        }
+    }
+
+    func onSelection(_ selection: Item.ID?) {
+        withAnimation {
+            if let selection = selection, let selectedIndex = items.firstIndex(where: {$0.id == selection }) {
+                draggingIndex = selectedIndex
+                calculateOffsetForCurrentSelection()
+                onResetScale()
             }
         }
     }
@@ -191,10 +251,9 @@ public struct VSwipy<T: Identifiable, ItemView: View>: View, SwipyProtocol {
             "maxScaleDownX": maxScaleDownX,
             "maxScaleDownY": maxScaleDownY,
             "percentageToSwipe": percentageToSwipe,
-            "animation": animation,
             "containerHeight": containerHeight
         ]
-        return dic.map{"\($0): \($1)"}.joined(separator: ",")
+        return dic.map{"\($0): \($1)"}.joined(separator: ",\n")
     }
 }
 

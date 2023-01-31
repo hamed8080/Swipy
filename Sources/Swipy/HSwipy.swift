@@ -80,49 +80,18 @@ public struct HSwipy<T: Identifiable, ItemView: View>: View, SwipyProtocol {
     var drag: some Gesture {
         DragGesture(minimumDistance: 10)
             .onChanged { value in
-                withAnimation(animation) {
-                    dragValue = value
-                    if isOverMin {
-                        draggingIndex = startIndex
-                        offsetX = edgeBouncerAmount
-                        return
-                    }
-
-                    if isOverMax {
-                        draggingIndex = lastIndex
-                        offsetX = maxAllowedDraggUp
-                        return
-                    }
-                    offsetX += trWidth
-                    scaleY = abs(max(maxScaleDownY, (trWidth / 100)))
-                    scaleX = abs(max(maxScaleDownX, (trWidth / 100)))
-                }
+                dragValue = value
+                onDragging()
             }
             .onEnded { _ in
-                withAnimation(animation) {
-                    isDragging = false
-                    if isTranslationGreaterThanTenPercent {
-                        if isDraggingLeft {
-                            draggingIndex = isTopIndex ? startIndex : draggingIndex - 1
-                        } else if isDraggingRight {
-                            draggingIndex = isLastIndex ? lastIndex : draggingIndex + 1
-                        }
-                    }
-                    offsetX = -(draggingIndex.cgFloatValue * containerWidth)
-                    selection = items[draggingIndex].id
-                    onSwipe?(items[draggingIndex])
-                }
+                onDrageFinished()
             }
     }
 
     var longGesture: some Gesture {
         LongPressGesture(minimumDuration: 0.002)
             .onEnded { _ in
-                withAnimation {
-                    scaleY = onTouchDownScaleX
-                    scaleX = onTouchDownScaleX
-                    isDragging = true
-                }
+                onLongPressing(true)
             }
     }
 
@@ -141,11 +110,7 @@ public struct HSwipy<T: Identifiable, ItemView: View>: View, SwipyProtocol {
                         .offset(CGSize(width: offsetX, height: 0))
                         .gesture(combinedGesture)
                         .onLongPressGesture(minimumDuration: 0.002, maximumDistance: 0) {} onPressingChanged: { isPressing in
-                            withAnimation {
-                                scaleY = isPressing ? onTouchDownScaleX : 1
-                                scaleX = isPressing ? onTouchDownScaleX : 1
-                                isDragging = isPressing
-                            }
+                            onLongPressing(isPressing)
                         }
                     }
                 }
@@ -153,13 +118,109 @@ public struct HSwipy<T: Identifiable, ItemView: View>: View, SwipyProtocol {
             .onAppear {
                 containerWidth = reader.size.width
             }
-            .onReceive(Just(selection)) { mewValue in
-                withAnimation {
-                    if let selection = selection, let selectedIndex = items.firstIndex(where: {$0.id == selection }) {
-                        draggingIndex = selectedIndex
-                        offsetX = -(draggingIndex.cgFloatValue * containerWidth)
-                    }
-                }
+            .onReceive(Just(selection)) { newValue in
+                onSelection(newValue)
+            }
+        }
+    }
+
+    func onLongPressing(_ isPressing: Bool) {
+        withAnimation {
+            isDragging = isPressing
+            if isPressing {
+                onPrsssingScale()
+            } else {
+                onResetScale()
+            }
+        }
+    }
+
+    func onPrsssingScale() {
+        scaleY = onTouchDownScaleX
+        scaleX = onTouchDownScaleX
+    }
+
+    func onDraggingScale() {
+        scaleY = abs(max(maxScaleDownY, (trWidth / 100)))
+        scaleX = scaleY
+    }
+
+    func onResetScale() {
+        scaleY = 1
+        scaleX = 1
+    }
+
+    func onDragging() {
+        withAnimation(animation) {
+            if isOverMin {
+                onOverDraggingFirstIndex()
+                return
+            }
+
+            if isOverMax {
+                onOverDraggingLastIndex()
+                return
+            }
+            calculateOffsetOnDragging()
+            onDraggingScale()
+        }
+    }
+
+    func onOverDraggingFirstIndex() {
+        draggingIndex = startIndex
+        offsetX = edgeBouncerAmount
+        onResetScale()
+    }
+
+    func onOverDraggingLastIndex() {
+        draggingIndex = lastIndex
+        offsetX = maxAllowedDraggUp
+        onResetScale()
+    }
+
+    func calculateOffsetOnDragging() {
+        offsetX += trWidth
+    }
+
+    func calculateOffsetForCurrentSelection() {
+        offsetX = -(draggingIndex.cgFloatValue * containerWidth)
+    }
+
+    func calculateOnFinishedDraggingIndex() {
+        if isTranslationGreaterThanTenPercent {
+            if isDraggingLeft {
+                onDragLeftIndex()
+            } else if isDraggingRight {
+                onDragRightIndex()
+            }
+        }
+        onResetScale()
+    }
+
+    func onDragLeftIndex() {
+        draggingIndex = isTopIndex ? startIndex : draggingIndex - 1
+    }
+
+    func onDragRightIndex() {
+        draggingIndex = isLastIndex ? lastIndex : draggingIndex + 1
+    }
+
+    func onDrageFinished() {
+        withAnimation(animation) {
+            isDragging = false
+            calculateOnFinishedDraggingIndex()
+            calculateOffsetForCurrentSelection()
+            selection = items[draggingIndex].id
+            onSwipe?(items[draggingIndex])
+        }
+    }
+
+    func onSelection(_ selection: Item.ID?) {
+        withAnimation {
+            if let selection = selection, let selectedIndex = items.firstIndex(where: {$0.id == selection }) {
+                draggingIndex = selectedIndex
+                calculateOffsetForCurrentSelection()
+                onResetScale()
             }
         }
     }
