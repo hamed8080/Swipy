@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Combine
 
 public struct HSwipy<T: Identifiable, ItemView: View>: View, SwipyProtocol {
     public typealias Item = T
@@ -24,6 +25,7 @@ public struct HSwipy<T: Identifiable, ItemView: View>: View, SwipyProtocol {
     @State private var isDragging = false
     @State private var draggingIndex: Int = 0
     @State private var dragValue: DragGesture.Value?
+    @Binding var selection: Item.ID?
 
 
     private var isTranslationGreaterThanTenPercent: Bool { abs(trWidth) > (containerWidth * percentageToSwipe) }
@@ -52,6 +54,7 @@ public struct HSwipy<T: Identifiable, ItemView: View>: View, SwipyProtocol {
 
     public init(
         _ items: [Item],
+        selection: Binding<Item.ID?>? = nil,
         edgeBouncerAmount: CGFloat = 10,
         onTouchDownScaleX: CGFloat = 0.95,
         maxScaleDownX: CGFloat = 0.85,
@@ -59,9 +62,10 @@ public struct HSwipy<T: Identifiable, ItemView: View>: View, SwipyProtocol {
         percentageToSwipe: CGFloat = 0.02,
         animation: Animation = .interactiveSpring(response: 0.1, dampingFraction: 0.5).speed(0.2),
         @ViewBuilder _ onItemView: @escaping OnItemView,
-        onSwipe: @escaping OnSwipe
+        onSwipe: OnSwipe? = nil
     ) {
         self.items = items
+        self._selection = selection ?? Binding.constant(nil)
         self.edgeBouncerAmount = edgeBouncerAmount
         self.onTouchDownScaleX = onTouchDownScaleX
         self.maxScaleDownX = maxScaleDownX
@@ -105,6 +109,7 @@ public struct HSwipy<T: Identifiable, ItemView: View>: View, SwipyProtocol {
                         }
                     }
                     offsetX = -(draggingIndex.cgFloatValue * containerWidth)
+                    selection = items[draggingIndex].id
                     onSwipe?(items[draggingIndex])
                 }
             }
@@ -147,6 +152,14 @@ public struct HSwipy<T: Identifiable, ItemView: View>: View, SwipyProtocol {
             }
             .onAppear {
                 containerWidth = reader.size.width
+            }
+            .onReceive(Just(selection)) { mewValue in
+                withAnimation {
+                    if let selection = selection, let selectedIndex = items.firstIndex(where: {$0.id == selection }) {
+                        draggingIndex = selectedIndex
+                        offsetX = -(draggingIndex.cgFloatValue * containerWidth)
+                    }
+                }
             }
         }
     }
