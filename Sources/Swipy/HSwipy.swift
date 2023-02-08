@@ -22,10 +22,14 @@ public struct HSwipy<T: Identifiable, ItemView: View>: View, SwipyProtocol {
     @State private var offsetX: CGFloat = .zero
     @State private var scaleY: CGFloat = 1
     @State private var scaleX: CGFloat = 1
+    @State public var scale3d: CGFloat = 0
+    @State public var scaleDegree: CGFloat = 0
     @State private var isDragging = false
     @State private var draggingIndex: Int = 0
     @State private var dragValue: DragGesture.Value?
     @Binding var selection: Item.ID?
+    @State public var isOpenMode: Bool = false
+    @State private var wasOverDragging: Bool = true
 
 
     private var isTranslationGreaterThanTenPercent: Bool { abs(trWidth) > (containerWidth * percentageToSwipe) }
@@ -133,6 +137,11 @@ public struct HSwipy<T: Identifiable, ItemView: View>: View, SwipyProtocol {
                 onResetScale()
             }
         }
+
+        withAnimation(.easeInOut) {
+            scale3d = isPressing ? 1 : 0
+            scaleDegree = isPressing ? 32 : 0
+        }
     }
 
     func onPrsssingScale() {
@@ -151,15 +160,23 @@ public struct HSwipy<T: Identifiable, ItemView: View>: View, SwipyProtocol {
     }
 
     func onDragging() {
+        if wasOverDragging {
+            return
+        }
         withAnimation(animation) {
             if isOverMin {
+                wasOverDragging = true
                 onOverDraggingFirstIndex()
                 return
             }
 
             if isOverMax {
+                wasOverDragging = true
                 onOverDraggingLastIndex()
                 return
+            }
+            if wasOverDragging {
+                wasOverDragging = false
             }
             calculateOffsetOnDragging()
             onDraggingScale()
@@ -212,6 +229,10 @@ public struct HSwipy<T: Identifiable, ItemView: View>: View, SwipyProtocol {
             calculateOffsetForCurrentSelection()
             selection = items[draggingIndex].id
             onSwipe?(items[draggingIndex])
+        }
+
+        withAnimation {
+            scale3d = 0
         }
     }
 
