@@ -17,6 +17,18 @@ Add in `Package.swift`:
 
 ## Usage 
 ```swift
+VSwipy(data, selection: $selectedItem) { item in
+    UserConfigView(userConfig: item)
+        .frame(height: containerHeight)
+        .background(Color.swipyBackground)
+        .cornerRadius(12)
+} onSwipe: { item in
+    // Write your code here after the switching has been completed.
+}
+.frame(height: containerHeight)
+.background(Color.orange.opacity(0.3))
+.cornerRadius(12)
+
 VSwipy(users) { user in
     HStack {
         ...
