@@ -11,7 +11,7 @@ import SwiftUI
 public class SwipyViewModel<T: Identifiable>: ObservableObject {
     public typealias Item = T
     public typealias OnSwipe = (Item) -> ()
-    var onSwipe: OnSwipe?
+    public var onSwipe: OnSwipe?
 
     public let direction: Direction
     public var items: [Item]
@@ -186,6 +186,7 @@ public class SwipyViewModel<T: Identifiable>: ObservableObject {
     }
 
     func onSelection(_ selection: Item.ID?) {
+        if selection == self.selection { return }
         withAnimation {
             if let selection = selection, let selectedIndex = items.firstIndex(where: {$0.id == selection }) {
                 draggingIndex = selectedIndex
