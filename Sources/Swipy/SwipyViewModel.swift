@@ -77,6 +77,7 @@ public class SwipyViewModel<T: Identifiable>: ObservableObject {
         self.animation = animation
         self.percentageToSwipe = percentageToSwipe
         self.onSwipe = onSwipe
+        updateForSelectedItem()
     }
 
     func onDragging() {
@@ -183,6 +184,18 @@ public class SwipyViewModel<T: Identifiable>: ObservableObject {
         onSwipe?(items[draggingIndex])
         scale3d = 0
         animateObjectWillChange()
+    }
+
+    public func updateForSelectedItem() {
+        if let selection = selection, let selectedIndex = items.firstIndex(where: {$0.id == selection }) {
+            draggingIndex = selectedIndex
+            isDragging = false
+            calculateOnFinishedDraggingIndex()
+            calculateOffsetForCurrentSelection()
+            onSwipe?(items[draggingIndex])
+            scale3d = 0
+            animateObjectWillChange()
+        }
     }
 
     func onSelection(_ selection: Item.ID?) {
